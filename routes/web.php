@@ -30,7 +30,6 @@ Route::middleware('auth.user')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     // Route::get('/dashboard-1', [DashboardController::class, 'index2'])->name('dashboard-2');
     Route::get('/logout', [DashboardController::class, 'logout'])->name('logout');
-    
     Route::get('user/agreement/{doctor_id}', [DashboardController::class, 'getAgreementPage'])->name('agreement');
     Route::post('user/agreement/{doctor_id}', [DashboardController::class, 'storeAgreementData'])->name('post.agreement');
     Route::get('user/confirmation/{doctor_id}', [DashboardController::class, 'getConfirmationPage'])->name('confirmation');
