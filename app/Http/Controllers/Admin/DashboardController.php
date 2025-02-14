@@ -1133,7 +1133,7 @@ class DashboardController extends Controller
             ->where('question_id', optional($nextQuestion)->id)
             ->first();
 
-        return view('user.survey', compact('doctor', 'nextQuestion', 'currentAnswer', 'isLast', 'decryptedDoctorId','doc_id', 'user', 'encryptedQuestionId'));
+        return view('user.survey', compact('doctor', 'nextQuestion', 'currentAnswer', 'isLast', 'decryptedDoctorId', 'doc_id', 'user', 'encryptedQuestionId'));
     }
 
     public function storeAnswer(Request $request)
@@ -1206,7 +1206,7 @@ class DashboardController extends Controller
             // \Log::info("Remaining questions: " . $remainingQuestionsCount);
 
             if ($isLast) {
-                return response()->json(['success' => true, 'isLast' => true,'redirect_url' => route('accountDetail', $decodedData['doctor_id'])]);
+                return response()->json(['success' => true, 'isLast' => true, 'redirect_url' => route('accountDetail', $decodedData['doctor_id'])]);
             }
 
             $nextQuestion = DB::table('questions')
@@ -1233,15 +1233,15 @@ class DashboardController extends Controller
             //     }
             // }
             $currentAnswer = DB::table('answers')
-            ->where('doctor_id', $decryptedDoctorId)
-            ->where('question_id', optional($nextQuestion)->id)
-            ->first();
+                ->where('doctor_id', $decryptedDoctorId)
+                ->where('question_id', optional($nextQuestion)->id)
+                ->first();
 
             if ($nextQuestion) {
                 if ($nextQuestion->id != $question_id) {
                     $dataToEncode = [
                         'nextQuestionId' => $nextQuestion->id,
-                        'nextQuestionHtml' => view('user.next-question', compact('nextQuestion','currentAnswer', 'isLast'))->render(),
+                        'nextQuestionHtml' => view('user.next-question', compact('nextQuestion', 'currentAnswer', 'isLast'))->render(),
                         'remainingQuestionsCount' => $remainingQuestionsCount
                     ];
 
@@ -1258,5 +1258,51 @@ class DashboardController extends Controller
             // \Log::error('Decryption failed for question_id: ' . $request->question);
             return response()->json(['error' => 'Invalid payload', 'message' => $e->getMessage()]);
         }
+    }
+
+    public function getPreviousQuestion(Request $request)
+    {
+        $decodedData = [];
+        parse_str(utf8_decode(base64_decode($request->encodedData)), $decodedData);
+        $decryptedDoctorId = ($decodedData['doc_id']);
+
+        // $questionId = is_numeric($decodedData['question']) ? $decodedData['question'] : Crypt::decryptString($decodedData['question']);
+        $previousQuestionId = ($decodedData['previous_question']);
+        $questionId = is_numeric($decodedData['question'])? $decodedData['question']: Crypt::decryptString($decodedData['question']);
+        // dd($questionId);
+
+        if (!isset($decodedData['answer'])) {
+            return response()->json(['error' => 'The answer field is required'], 401);
+        }
+        $answer = $decodedData['answer'];
+        $isLast = $decodedData['is_last'];
+        $doctor = DB::table('doctors')->where('id', $decryptedDoctorId)->where('is_deleted', 0)->first();
+        $survey_id = $doctor->survey_id;
+        $nextQuestion = DB::table('questions')
+            ->where('survey_id', $survey_id)
+            ->where('id', '>', $questionId)
+            ->orderBy('id', 'asc')
+            ->first();
+            
+        if ($isLast) {
+            return response()->json(['success' => true, 'isLast' => true, 'redirect_url' => route('accountDetail', $decodedData['doctor_id'])]);
+        }
+
+        $previousQuestion = DB::table('questions')->where('id', '<', $questionId)->orderBy('id', 'desc')->first();
+
+        $currentAnswer = DB::table('answers')
+            ->where('doctor_id', $decryptedDoctorId)
+            ->where('question_id', optional($previousQuestion)->id)
+            ->first();
+
+
+        if ($previousQuestion) {
+            return response()->json([
+                'previousQuestionId' => $previousQuestion->id,
+                'previousQuestionHtml' => view('user.previous_question', compact('previousQuestion', 'nextQuestion', 'currentAnswer', 'isLast'))->render(),
+            ]);
+        }
+
+        return response()->json(['error' => 'No previous question found'], 400);
     }
 }

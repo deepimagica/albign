@@ -45,5 +45,6 @@ Route::middleware('auth.user')->group(function () {
     Route::get('user/verify-mobile/{doctor_id}', [DashboardController::class, 'getVerifyPage'])->name('verify.mobile');
     Route::post('user/verify-mobile/{doctor_id}', [DashboardController::class, 'verifyOTP'])->name('verify.otp');
     Route::get('user/survay-complete/{survey_id}/{doctor_id}', [DashboardController::class, 'getSurveyFinalPage'])->name('survey');
+    Route::get('/survey/previous', [DashboardController::class,'getPreviousQuestion'])->name('survey.getPreviousQuestion');
 });
 
